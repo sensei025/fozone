@@ -1,0 +1,364 @@
+/**
+ * Contrôleur pour la gestion des paiements
+ * Gère la création de paiements et les webhooks Moneroo
+ */
+
+const { supabaseAdmin } = require('../config/database');
+const { createPayment, verifyPayment, verifyWebhookSignature, parseWebhookPayload } = require('../services/moneroo');
+const { assignTicketAtomically } = require('../utils/ticketManager');
+const { checkIdempotency, saveIdempotency } = require('../utils/idempotency');
+const logger = require('../config/logger');
+
+/**
+ * Crée une intention de paiement pour un client
+ * Route publique (pas d'auth requise car appelée depuis le portail captif)
+ */
+async function createPaymentIntent(req, res, next) {
+  try {
+    const { wifi_zone_id, amount, pricing_id, customer } = req.body;
+
+    // Vérifier que la zone Wi-Fi existe
+    const { data: zone, error: zoneError } = await supabaseAdmin
+      .from('wifi_zones')
+      .select('id, name')
+      .eq('id', wifi_zone_id)
+      .single();
+
+    if (zoneError || !zone) {
+      return res.status(404).json({
+        error: 'Wi-Fi zone not found'
+      });
+    }
+
+    // Vérifier que le tarif existe et correspond à la zone, ou utiliser amount
+    let finalAmount;
+    if (pricing_id) {
+      const { data: pricing } = await supabaseAdmin
+        .from('pricings')
+        .select('id, amount, description')
+        .eq('id', pricing_id)
+        .eq('wifi_zone_id', wifi_zone_id)
+        .eq('is_active', true)
+        .single();
+
+      if (!pricing) {
+        return res.status(400).json({
+          error: 'Invalid pricing for this zone'
+        });
+      }
+      finalAmount = parseFloat(pricing.amount);
+    } else if (amount) {
+      finalAmount = parseFloat(amount);
+    } else {
+      return res.status(400).json({
+        error: 'Either amount or pricing_id must be provided'
+      });
+    }
+
+    // Construire l'URL de retour (où le client sera redirigé après paiement)
+    // Moneroo ajoutera paymentId et paymentStatus dans les query params
+    const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/return`;
+
+    // Créer le paiement dans Moneroo avec le format requis
+    const paymentResult = await createPayment({
+      amount: finalAmount,
+      currency: 'XOF',
+      description: `Achat ticket Wi-Fi - ${zone.name}`,
+      return_url: returnUrl,
+      customer: {
+        email: customer?.email || 'client@example.com',
+        first_name: customer?.first_name || 'Client',
+        last_name: customer?.last_name || 'WiFi',
+        phone: customer?.phone || null
+      },
+      metadata: {
+        wifi_zone_id: wifi_zone_id,
+        pricing_id: pricing_id || null
+      },
+      methods: ['mtn_bj', 'moov_bj'] // Méthodes disponibles au Bénin
+    });
+
+    if (!paymentResult.success) {
+      return res.status(400).json({
+        error: 'Failed to create payment',
+        details: paymentResult.error,
+        errors: paymentResult.errors
+      });
+    }
+
+    // Enregistrer le paiement en base de données
+    const { data: payment, error: paymentError } = await supabaseAdmin
+      .from('payments')
+      .insert({
+        moneroo_payment_id: paymentResult.paymentId,
+        wifi_zone_id: wifi_zone_id,
+        amount: finalAmount,
+        phone: customer?.phone || null,
+        pricing_id: pricing_id || null,
+        status: 'pending',
+        currency: 'XOF'
+      })
+      .select()
+      .single();
+
+    if (paymentError) {
+      logger.error('Error saving payment:', paymentError);
+      return res.status(500).json({
+        error: 'Failed to save payment'
+      });
+    }
+
+    logger.info(`Payment intent created: ${payment.id} for zone ${wifi_zone_id}`);
+
+    res.status(201).json({
+      message: 'Payment intent created',
+      payment: {
+        id: payment.id,
+        amount: payment.amount,
+        status: payment.status,
+        checkout_url: paymentResult.checkoutUrl
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Webhook Moneroo pour les confirmations de paiement
+ * Route publique mais sécurisée par signature
+ */
+async function handleMonerooWebhook(req, res, next) {
+  try {
+    const signature = req.headers['x-moneroo-signature'];
+    
+    // Le payload doit être la chaîne JSON brute pour la vérification
+    // JSON.stringify préserve l'ordre des clés dans les objets JavaScript modernes
+    const rawBody = JSON.stringify(req.body);
+    
+    // Vérifier la signature du webhook (HMAC-SHA256 du payload stringifié)
+    if (!verifyWebhookSignature(rawBody, signature)) {
+      logger.warn('Invalid webhook signature received');
+      return res.status(403).json({
+        error: 'Invalid signature'
+      });
+    }
+
+    // Parser le payload selon le format Moneroo : { event, data }
+    const webhookPayload = parseWebhookPayload(req.body);
+    const { event, paymentId, status } = webhookPayload;
+
+    // Vérifier l'idempotence (utiliser l'event + paymentId pour éviter les doublons)
+    const idempotencyKey = `moneroo_${event}_${paymentId}`;
+    const idempotencyCheck = await checkIdempotency(idempotencyKey);
+
+    if (!idempotencyCheck.isNew) {
+      logger.info(`Webhook already processed: ${idempotencyKey}`);
+      // Retourner le ticket déjà attribué
+      const { data: existingPayment } = await supabaseAdmin
+        .from('payments')
+        .select('*, tickets(*)')
+        .eq('id', idempotencyCheck.paymentId)
+        .single();
+
+      return res.json({
+        message: 'Webhook already processed',
+        payment: existingPayment
+      });
+    }
+
+    // Récupérer le paiement
+    const { data: payment, error: paymentError } = await supabaseAdmin
+      .from('payments')
+      .select('*')
+      .eq('moneroo_payment_id', paymentId)
+      .single();
+
+    if (paymentError || !payment) {
+      logger.error('Payment not found for webhook:', paymentId);
+      return res.status(404).json({
+        error: 'Payment not found'
+      });
+    }
+
+    // Si le paiement est déjà confirmé, ne rien faire
+    if (payment.status === 'completed') {
+      await saveIdempotency(idempotencyKey, payment.id);
+      return res.status(200).json({
+        message: 'Payment already completed'
+      });
+    }
+
+    // Traiter selon le type d'événement Moneroo
+    // payment.success, payment.failed, payment.cancelled, payment.initiated
+    if (event === 'payment.success' && status === 'success') {
+      // Mettre à jour le statut du paiement
+      const { error: updateError } = await supabaseAdmin
+        .from('payments')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          transaction_id: webhookPayload.data?.capture?.gateway?.transaction_id || null
+        })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        logger.error('Error updating payment status:', updateError);
+        throw updateError;
+      }
+
+      // Attribuer un ticket de manière atomique
+      const ticketAssignment = await assignTicketAtomically(
+        payment.wifi_zone_id,
+        payment.id
+      );
+
+      if (!ticketAssignment.success) {
+        logger.error('Failed to assign ticket:', ticketAssignment.error);
+        // Le paiement est confirmé mais pas de ticket disponible
+        // On pourrait créer un ticket en attente ou notifier l'admin
+        return res.status(500).json({
+          error: 'Payment confirmed but ticket assignment failed',
+          details: ticketAssignment.error
+        });
+      }
+
+      // Enregistrer l'idempotence
+      await saveIdempotency(idempotencyKey, payment.id);
+
+      logger.info(`Payment ${payment.id} completed, ticket ${ticketAssignment.ticket.id} assigned`);
+
+      res.status(200).json({
+        message: 'Payment processed successfully',
+        payment: {
+          id: payment.id,
+          status: 'completed'
+        },
+        ticket: {
+          id: ticketAssignment.ticket.id,
+          username: ticketAssignment.ticket.username,
+          password: ticketAssignment.ticket.password
+        }
+      });
+    } else if (event === 'payment.failed' || event === 'payment.cancelled') {
+      // Mettre à jour le statut du paiement en échec
+      await supabaseAdmin
+        .from('payments')
+        .update({
+          status: 'failed',
+          failed_at: new Date().toISOString()
+        })
+        .eq('id', payment.id);
+
+      await saveIdempotency(idempotencyKey, payment.id);
+
+      res.status(200).json({
+        message: 'Payment failed',
+        payment: {
+          id: payment.id,
+          status: 'failed'
+        }
+      });
+    } else {
+      // Autres événements (payment.initiated, etc.) - juste enregistrer l'idempotence
+      await saveIdempotency(idempotencyKey, payment.id);
+      res.status(200).json({
+        message: 'Webhook received',
+        event: event
+      });
+    }
+  } catch (error) {
+    logger.error('Error processing webhook:', error);
+    next(error);
+  }
+}
+
+/**
+ * Récupère les informations d'un paiement (pour le client)
+ */
+async function getPaymentStatus(req, res, next) {
+  try {
+    const { paymentId } = req.params;
+
+    const { data: payment, error } = await supabaseAdmin
+      .from('payments')
+      .select('*, tickets(username, password), wifi_zones(name)')
+      .eq('id', paymentId)
+      .single();
+
+    if (error || !payment) {
+      return res.status(404).json({
+        error: 'Payment not found'
+      });
+    }
+
+    res.json({
+      payment: payment
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Récupère tous les paiements d'une zone Wi-Fi (pour l'admin)
+ */
+async function getPaymentsByZone(req, res, next) {
+  try {
+    const { zoneId } = req.params;
+    const { status, page = 1, limit = 50 } = req.query;
+
+    // Vérifier que la zone appartient à l'utilisateur
+    const { data: zone } = await supabaseAdmin
+      .from('wifi_zones')
+      .select('id')
+      .eq('id', zoneId)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (!zone) {
+      return res.status(404).json({
+        error: 'Wi-Fi zone not found'
+      });
+    }
+
+    let query = supabaseAdmin
+      .from('payments')
+      .select('*, tickets(id, username), pricings(amount, duration_hours)')
+      .eq('wifi_zone_id', zoneId);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data: payments, error } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      logger.error('Error fetching payments:', error);
+      throw error;
+    }
+
+    res.json({
+      payments: payments || [],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  createPaymentIntent,
+  handleMonerooWebhook,
+  getPaymentStatus,
+  getPaymentsByZone
+};
+
