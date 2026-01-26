@@ -23,7 +23,8 @@ export default function Dashboard() {
       setStats(statsData.stats);
       setZones(zonesData.zones || []);
     } catch (error) {
-      toast.error('Erreur lors du chargement des données');
+      console.error('[Dashboard] Erreur:', error);
+      toast.error(error.message || 'Impossible de charger les données');
     } finally {
       setLoading(false);
     }

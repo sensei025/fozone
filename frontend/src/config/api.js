@@ -26,6 +26,11 @@ async function apiRequest(endpoint, options = {}) {
     },
   };
 
+  // Debug: Log les requêtes DELETE
+  if (config.method === 'DELETE') {
+    console.log(`[API] DELETE request to: ${API_URL}${endpoint}`);
+  }
+
   try {
     const response = await fetch(`${API_URL}${endpoint}`, config);
     
@@ -39,7 +44,7 @@ async function apiRequest(endpoint, options = {}) {
     if (!response.ok) {
       // Si erreur d'authentification, nettoyer le localStorage
       if (response.status === 401 || response.status === 403) {
-        if (data.error && (data.error.includes('token') || data.error.includes('Token') || data.error.includes('Access denied'))) {
+        if (data.error && (data.error.includes('token') || data.error.includes('Token') || data.error.includes('Session expirée') || data.error.includes('Access denied'))) {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user');
           // Rediriger vers login si on est dans le navigateur
@@ -49,20 +54,15 @@ async function apiRequest(endpoint, options = {}) {
         }
       }
       
-      // Créer une erreur avec plus de détails
-      let errorMessage = data.error || data.message || 'Une erreur est survenue';
+      // Message d'erreur user-friendly (déjà sanitized par le backend)
+      const errorMessage = data.error || 'Une erreur est survenue. Veuillez réessayer';
       
-      // Si on a des détails de validation, les inclure dans le message
-      if (data.details && Array.isArray(data.details) && data.details.length > 0) {
-        const validationMessages = data.details.map(d => d.message || d.msg || JSON.stringify(d)).join(', ');
-        errorMessage = `${errorMessage}: ${validationMessages}`;
-      } else if (data.details && typeof data.details === 'string') {
-        errorMessage = `${errorMessage}: ${data.details}`;
+      // Logger les détails techniques uniquement en console (pas affichés à l'utilisateur)
+      if (process.env.NODE_ENV === 'development' && data._debug) {
+        console.error('[API Debug]', data._debug);
       }
       
       const error = new Error(errorMessage);
-      error.details = data.details;
-      error.response = data;
       error.status = response.status;
       throw error;
     }

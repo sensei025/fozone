@@ -11,6 +11,7 @@ import WifiZoneDetail from './pages/WifiZoneDetail';
 import Pricings from './pages/Pricings';
 import Tickets from './pages/Tickets';
 import Accounting from './pages/Accounting';
+import Profile from './pages/Profile';
 import BuyTicket from './pages/BuyTicket';
 import PaymentReturn from './pages/PaymentReturn';
 
@@ -53,6 +54,7 @@ function AppRoutes() {
           <Route path="pricings" element={<Pricings />} />
           <Route path="tickets" element={<Tickets />} />
           <Route path="accounting" element={<Accounting />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </>

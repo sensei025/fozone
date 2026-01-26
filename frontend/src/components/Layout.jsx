@@ -1,7 +1,8 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { Moon, Sun, Menu, X, Wifi, Home, DollarSign, Ticket, FileText, LogOut, Settings } from 'lucide-react';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Moon, Sun, Menu, X, Wifi, Home, DollarSign, Ticket, FileText, LogOut, Settings, Search, X as XIcon } from 'lucide-react';
 import { logout, getCurrentUser } from '../services/auth';
+import Logo from './Logo';
 
 export default function Layout() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -9,8 +10,15 @@ export default function Layout() {
            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
   const [user, setUser] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setUser(getCurrentUser());
@@ -34,12 +42,69 @@ export default function Layout() {
     navigate('/login');
   };
 
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', newState.toString());
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.full_name) {
+      const parts = user.full_name.split(' ');
+      return parts[0] || user.email?.split('@')[0] || 'Utilisateur';
+    }
+    return user?.email?.split('@')[0] || 'Utilisateur';
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    const query = searchQuery.toLowerCase().trim();
+    const routes = [
+      { path: '/dashboard', keywords: ['dashboard', 'accueil', 'tableau', 'home'] },
+      { path: '/zones', keywords: ['zones', 'wifi', 'zone', 'réseau'] },
+      { path: '/pricings', keywords: ['tarifs', 'prix', 'forfaits', 'pricing'] },
+      { path: '/tickets', keywords: ['tickets', 'billets', 'ticket'] },
+      { path: '/accounting', keywords: ['comptabilité', 'compta', 'recettes', 'revenus', 'paiements'] },
+      { path: '/profile', keywords: ['profil', 'compte', 'paramètres', 'settings'] },
+    ];
+
+    const matchedRoute = routes.find(route => 
+      route.keywords.some(keyword => query.includes(keyword))
+    );
+
+    if (matchedRoute) {
+      navigate(matchedRoute.path);
+      setSearchQuery('');
+      setSearchOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (searchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchOpen]);
+
+  useEffect(() => {
+    setSearchOpen(false);
+  }, [location.pathname]);
+
   const menuItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/zones', icon: Wifi, label: 'Zones Wi-Fi' },
     { path: '/pricings', icon: DollarSign, label: 'Tarifs' },
     { path: '/tickets', icon: Ticket, label: 'Tickets' },
     { path: '/accounting', icon: FileText, label: 'Comptabilité' },
+    { path: '/profile', icon: Settings, label: 'Mon Profil' },
   ];
 
   return (
@@ -53,7 +118,7 @@ export default function Layout() {
               <div className="p-1.5 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg">
                 <Wifi className="text-white" size={20} strokeWidth={2.5} />
               </div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Starlink Tickets</h1>
+              <Logo size="md" className="text-gray-900 dark:text-white" />
             </div>
             <button onClick={() => setSidebarOpen(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
               <X size={24} strokeWidth={2} />
@@ -79,34 +144,53 @@ export default function Layout() {
       </div>
 
       {/* Sidebar Desktop */}
-      <div className="hidden lg:flex lg:flex-shrink-0 lg:fixed lg:inset-y-0 lg:left-0">
-        <div className="flex flex-col w-64">
+      <div className={`hidden lg:flex lg:flex-shrink-0 lg:fixed lg:inset-y-0 lg:left-0 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}>
+        <div className="flex flex-col w-full">
           <div className="flex flex-col flex-1 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-screen overflow-y-auto">
-            <div className="flex items-center h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-3">
-                <div className="p-1.5 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg">
+            <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
+              <div className={`flex items-center gap-3 transition-opacity duration-300 ${sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+                <div className="p-1.5 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg flex-shrink-0">
                   <Wifi className="text-white" size={20} strokeWidth={2.5} />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Starlink Tickets</h1>
+                <Logo size="md" className="text-gray-900 dark:text-white whitespace-nowrap" />
               </div>
+              <button
+                onClick={toggleSidebar}
+                className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 flex-shrink-0"
+                title={sidebarCollapsed ? 'Agrandir le menu' : 'Réduire le menu'}
+              >
+                <Menu size={20} strokeWidth={2} className={sidebarCollapsed ? 'rotate-180' : ''} />
+              </button>
             </div>
-            <nav className="flex-1 px-4 py-4 space-y-2">
+            <nav className="flex-1 px-2 py-4 space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className={`flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 group relative ${
+                      sidebarCollapsed ? 'justify-center' : ''
+                    }`}
+                    title={sidebarCollapsed ? item.label : ''}
                   >
-                    <Icon size={20} className="mr-3" />
-                    {item.label}
+                    <Icon size={20} className={`flex-shrink-0 ${sidebarCollapsed ? '' : 'mr-3'}`} />
+                    <span className={`transition-all duration-300 whitespace-nowrap ${
+                      sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    }`}>
+                      {item.label}
+                    </span>
+                    {sidebarCollapsed && (
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                        {item.label}
+                      </div>
+                    )}
                   </Link>
                 );
               })}
             </nav>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-4">
+            <div className={`p-4 border-t border-gray-200 dark:border-gray-700 transition-all duration-300 ${sidebarCollapsed ? 'px-2' : ''}`}>
+              <div className={`flex items-center justify-between mb-4 transition-opacity duration-300 ${sidebarCollapsed ? 'opacity-0 h-0 overflow-hidden mb-0' : 'opacity-100'}`}>
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {user?.email || 'Utilisateur'}
@@ -118,10 +202,17 @@ export default function Layout() {
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                className={`flex items-center w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 ${
+                  sidebarCollapsed ? 'justify-center' : ''
+                }`}
+                title={sidebarCollapsed ? 'Déconnexion' : ''}
               >
-                <LogOut size={16} className="mr-2" />
-                Déconnexion
+                <LogOut size={16} className={`flex-shrink-0 ${sidebarCollapsed ? '' : 'mr-2'}`} />
+                <span className={`transition-all duration-300 whitespace-nowrap ${
+                  sidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                }`}>
+                  Déconnexion
+                </span>
               </button>
             </div>
           </div>
@@ -129,19 +220,69 @@ export default function Layout() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 min-w-0 lg:ml-64">
+      <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         {/* Top Bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8 xl:px-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm w-full">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-          >
-            <Menu size={24} strokeWidth={2} />
-          </button>
-          <div className="flex items-center space-x-4 ml-auto">
+          <div className="flex items-center gap-4 flex-1">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-200 hover:scale-110"
+            >
+              <Menu size={24} strokeWidth={2} />
+            </button>
+            
+            {/* Message de bienvenue */}
+            <div className="hidden sm:block">
+              <p className="text-sm md:text-base font-medium text-gray-700 dark:text-gray-300">
+                {getGreeting()}, <span className="font-semibold text-primary-600 dark:text-primary-400">{getUserDisplayName()}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Barre de recherche et actions */}
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Recherche */}
+            {searchOpen ? (
+              <form onSubmit={handleSearch} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-1.5 animate-in fade-in slide-in-from-right-5 duration-200">
+                <Search size={18} className="text-gray-500 dark:text-gray-400" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher une section..."
+                  className="bg-transparent border-0 outline-none text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 w-48 md:w-64"
+                  onBlur={() => {
+                    setTimeout(() => {
+                      if (!searchQuery.trim()) setSearchOpen(false);
+                    }, 200);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchOpen(false);
+                  }}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                >
+                  <XIcon size={18} strokeWidth={2} />
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-110 interactive"
+                title="Rechercher une section"
+              >
+                <Search size={20} strokeWidth={2} />
+              </button>
+            )}
+
+            {/* Toggle Dark Mode */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-110 interactive"
               title={darkMode ? 'Mode clair' : 'Mode sombre'}
             >
               {darkMode ? <Sun size={20} strokeWidth={2} /> : <Moon size={20} strokeWidth={2} />}

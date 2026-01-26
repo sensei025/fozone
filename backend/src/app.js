@@ -51,7 +51,7 @@ app.use('/api', routes);
 // Route racine
 app.get('/', (req, res) => {
   res.json({
-    message: 'Starlink Tickets API',
+    message: 'FÔ-ZÔNE API',
     version: '1.0.0',
     endpoints: {
       health: '/api/health',

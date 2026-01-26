@@ -31,9 +31,22 @@ const zoneIdValidation = [
 
 router.use(authenticateToken);
 
+// Routes spécifiques pour un ticket (doivent être définies AVANT les routes /zone/:zoneId)
+const ticketIdValidation = [
+  param('ticketId').isUUID()
+];
+
+router.delete('/:ticketId', 
+  ticketIdValidation, 
+  validate, 
+  ticketController.deleteTicket
+);
+
+// Routes pour les zones
 router.get('/zone/:zoneId', 
   zoneIdValidation, 
   [query('status').optional().isIn(['free', 'reserved', 'sold', 'expired']),
+   query('pricing_id').optional().isUUID(),
    query('page').optional().isInt({ min: 1 }),
    query('limit').optional().isInt({ min: 1, max: 100 })],
   validate, 
@@ -51,6 +64,12 @@ router.get('/zone/:zoneId/stats',
   zoneIdValidation, 
   validate, 
   ticketController.getTicketStats
+);
+
+router.delete('/zone/:zoneId/all', 
+  zoneIdValidation, 
+  validate, 
+  ticketController.deleteAllTickets
 );
 
 module.exports = router;

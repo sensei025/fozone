@@ -14,10 +14,16 @@ export async function getTicketsByZone(zoneId, params = {}) {
 
 /**
  * Importe des tickets depuis un fichier CSV
+ * @param {string} zoneId - ID de la zone WiFi
+ * @param {File} csvFile - Fichier CSV à importer
+ * @param {string} pricingId - ID du tarif (optionnel)
  */
-export async function importTickets(zoneId, csvFile) {
+export async function importTickets(zoneId, csvFile, pricingId = null) {
   const formData = new FormData();
   formData.append('csv', csvFile);
+  if (pricingId) {
+    formData.append('pricing_id', pricingId);
+  }
 
   const token = localStorage.getItem('auth_token');
   
@@ -45,6 +51,20 @@ export async function importTickets(zoneId, csvFile) {
  */
 export async function getTicketStats(zoneId) {
   return api.get(`/tickets/zone/${zoneId}/stats`);
+}
+
+/**
+ * Supprime un ticket spécifique
+ */
+export async function deleteTicket(ticketId) {
+  return api.delete(`/tickets/${ticketId}`);
+}
+
+/**
+ * Supprime tous les tickets d'une zone
+ */
+export async function deleteAllTickets(zoneId) {
+  return api.delete(`/tickets/zone/${zoneId}/all`);
 }
 
 

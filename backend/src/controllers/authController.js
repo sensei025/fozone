@@ -155,7 +155,7 @@ async function getProfile(req, res, next) {
   try {
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('id, email, full_name, role, created_at')
+      .select('id, email, full_name, phone, role, created_at')
       .eq('id', req.user.id)
       .single();
 
@@ -173,9 +173,134 @@ async function getProfile(req, res, next) {
   }
 }
 
+/**
+ * Met à jour le profil de l'utilisateur
+ */
+async function updateProfile(req, res, next) {
+  try {
+    const { full_name, email, phone } = req.body;
+    const userId = req.user.id;
+
+    // Vérifier que l'email n'est pas déjà utilisé par un autre utilisateur
+    if (email) {
+      const { data: existingUser } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .neq('id', userId)
+        .single();
+
+      if (existingUser) {
+        return res.status(400).json({
+          error: 'Email already in use'
+        });
+      }
+    }
+
+    const updateData = {};
+    if (full_name !== undefined) updateData.full_name = full_name?.trim() || null;
+    if (email !== undefined) updateData.email = email.trim();
+    if (phone !== undefined) updateData.phone = phone?.trim() || null;
+
+    const { data: updatedUser, error } = await supabaseAdmin
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select('id, email, full_name, phone, role, created_at')
+      .single();
+
+    if (error) {
+      logger.error('Error updating profile:', error);
+      return res.status(400).json({
+        error: 'Failed to update profile',
+        details: error.message
+      });
+    }
+
+    logger.info(`Profile updated for user ${userId}`);
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Change le mot de passe de l'utilisateur
+ */
+async function changePassword(req, res, next) {
+  try {
+    const { current_password, new_password } = req.body;
+    const userId = req.user.id;
+
+    if (!current_password || !new_password) {
+      return res.status(400).json({
+        error: 'Current password and new password are required'
+      });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({
+        error: 'New password must be at least 6 characters long'
+      });
+    }
+
+    // Récupérer l'utilisateur avec le mot de passe hashé
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('password_hash')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({
+        error: 'User not found'
+      });
+    }
+
+    // Vérifier le mot de passe actuel
+    const isValidPassword = await bcrypt.compare(current_password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        error: 'Current password is incorrect'
+      });
+    }
+
+    // Hasher le nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    // Mettre à jour le mot de passe
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({ password_hash: hashedPassword })
+      .eq('id', userId);
+
+    if (updateError) {
+      logger.error('Error changing password:', updateError);
+      return res.status(400).json({
+        error: 'Failed to change password',
+        details: updateError.message
+      });
+    }
+
+    logger.info(`Password changed for user ${userId}`);
+
+    res.json({
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   register,
   login,
-  getProfile
+  getProfile,
+  updateProfile,
+  changePassword
 };
 

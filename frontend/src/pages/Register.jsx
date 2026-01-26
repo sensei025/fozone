@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/auth';
 import toast from 'react-hot-toast';
 import { Wifi, Mail, Lock, User } from 'lucide-react';
+import Logo from '../components/Logo';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -22,7 +23,8 @@ export default function Register() {
       toast.success('Inscription réussie !');
       window.location.href = '/dashboard';
     } catch (error) {
-      toast.error(error.message || 'Erreur lors de l\'inscription');
+      console.error('[Register] Erreur:', error);
+      toast.error(error.message || 'Impossible de créer le compte');
     } finally {
       setLoading(false);
     }
@@ -39,8 +41,8 @@ export default function Register() {
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
             Créer un compte
           </h1>
-          <p className="text-base text-gray-600 dark:text-gray-400 font-medium">
-            Rejoignez Starlink Tickets
+          <p className="text-base text-gray-600 dark:text-gray-400 font-medium flex items-center gap-2">
+            Rejoignez <Logo size="lg" className="inline-block text-gray-900 dark:text-white" />
           </p>
         </div>
 

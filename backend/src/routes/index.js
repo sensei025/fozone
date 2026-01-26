@@ -13,6 +13,7 @@ const pricingRoutes = require('./pricings');
 const ticketRoutes = require('./tickets');
 const paymentRoutes = require('./payments');
 const dashboardRoutes = require('./dashboard');
+const accountingRoutes = require('./accounting');
 
 // Montage des routes
 router.use('/auth', authRoutes);
@@ -21,13 +22,14 @@ router.use('/pricings', pricingRoutes);
 router.use('/tickets', ticketRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/accounting', accountingRoutes);
 
 // Route de santé de l'API
 router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    service: 'starlink-tickets-api'
+    service: 'fo-zone-api'
   });
 });
 

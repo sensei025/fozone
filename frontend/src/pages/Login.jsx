@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../services/auth';
 import toast from 'react-hot-toast';
 import { Wifi, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import Logo from '../components/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,7 +21,8 @@ export default function Login() {
       toast.success('Connexion réussie !');
       window.location.href = '/dashboard';
     } catch (error) {
-      toast.error(error.message || 'Erreur de connexion');
+      console.error('[Login] Erreur:', error);
+      toast.error(error.message || 'Identifiants incorrects');
     } finally {
       setLoading(false);
     }
@@ -34,9 +36,7 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl mb-6 shadow-lg shadow-primary-500/20">
             <Wifi className="text-white" size={36} strokeWidth={2.5} />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
-            Starlink Tickets
-          </h1>
+          <Logo size="xl" className="text-gray-900 dark:text-white mb-2" />
           <p className="text-base text-gray-600 dark:text-gray-400 font-medium">
             Connectez-vous à votre compte
           </p>
