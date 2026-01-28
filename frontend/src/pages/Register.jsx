@@ -21,7 +21,7 @@ export default function Register() {
     try {
       await register(formData.email, formData.password, formData.full_name);
       toast.success('Inscription réussie !');
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (error) {
       console.error('[Register] Erreur:', error);
       toast.error(error.message || 'Impossible de créer le compte');
@@ -138,4 +138,3 @@ export default function Register() {
     </div>
   );
 }
-

@@ -19,7 +19,7 @@ export default function Login() {
     try {
       await login(email, password);
       toast.success('Connexion réussie !');
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     } catch (error) {
       console.error('[Login] Erreur:', error);
       toast.error(error.message || 'Identifiants incorrects');
@@ -127,4 +127,3 @@ export default function Login() {
     </div>
   );
 }
-
