@@ -3,6 +3,7 @@
  */
 
 import api from '../config/api';
+import { getApiUrl } from '../config/env';
 
 /**
  * Récupère toutes les zones Wi-Fi
@@ -43,9 +44,7 @@ export async function deleteWifiZone(id) {
  * Récupère les informations publiques d'une zone Wi-Fi (route publique, pas d'auth)
  */
 export async function getPublicWifiZoneById(id) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-  
-  const response = await fetch(`${API_URL}/wifi-zones/public/${id}`, {
+  const response = await fetch(getApiUrl(`wifi-zones/public/${id}`), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

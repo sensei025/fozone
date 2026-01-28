@@ -3,15 +3,14 @@
  */
 
 import api from '../config/api';
+import { getApiUrl } from '../config/env';
 
 /**
  * Crée une intention de paiement (route publique)
  */
 export async function createPaymentIntent(paymentData) {
   // Route publique, pas besoin du token
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-  
-  const response = await fetch(`${API_URL}/payments/intent`, {
+  const response = await fetch(getApiUrl('payments/intent'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -31,9 +30,7 @@ export async function createPaymentIntent(paymentData) {
  * Récupère le statut d'un paiement (route publique)
  */
 export async function getPaymentStatus(paymentId) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-  
-  const response = await fetch(`${API_URL}/payments/${paymentId}`, {
+  const response = await fetch(getApiUrl(`payments/${paymentId}`), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

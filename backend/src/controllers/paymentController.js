@@ -69,7 +69,7 @@ async function createPaymentIntent(req, res, next) {
         email: customer?.email || 'client@example.com',
         first_name: customer?.first_name || 'Client',
         last_name: customer?.last_name || 'WiFi',
-        phone: customer?.phone || null
+        phone: customer?.phone || undefined // Ne pas envoyer si non fourni
       },
       metadata: {
         wifi_zone_id: wifi_zone_id,
@@ -87,13 +87,14 @@ async function createPaymentIntent(req, res, next) {
     }
 
     // Enregistrer le paiement en base de données
+    // Note: phone est NOT NULL dans le schéma, donc on fournit une valeur par défaut si non fourni
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from('payments')
       .insert({
         moneroo_payment_id: paymentResult.paymentId,
         wifi_zone_id: wifi_zone_id,
         amount: finalAmount,
-        phone: customer?.phone || null,
+        phone: customer?.phone || 'N/A', // Valeur par défaut (sera NULL après migration 006)
         pricing_id: pricing_id || null,
         status: 'pending',
         currency: 'XOF'
@@ -157,9 +158,23 @@ async function handleMonerooWebhook(req, res, next) {
       // Retourner le ticket déjà attribué
       const { data: existingPayment } = await supabaseAdmin
         .from('payments')
-        .select('*, tickets(*)')
+        .select('*')
         .eq('id', idempotencyCheck.paymentId)
         .single();
+      
+      // Récupérer les tickets associés
+      if (existingPayment) {
+        const { data: tickets } = await supabaseAdmin
+          .from('tickets')
+          .select('username, password')
+          .eq('payment_id', existingPayment.id);
+        
+        if (tickets) {
+          existingPayment.tickets = tickets;
+        } else {
+          existingPayment.tickets = [];
+        }
+      }
 
       return res.json({
         message: 'Webhook already processed',
@@ -275,21 +290,106 @@ async function handleMonerooWebhook(req, res, next) {
 
 /**
  * Récupère les informations d'un paiement (pour le client)
+ * Le paymentId peut être soit un UUID interne, soit un ID Moneroo (py_xxx)
+ * Si le paiement est en attente, on vérifie aussi avec Moneroo pour mettre à jour le statut
  */
 async function getPaymentStatus(req, res, next) {
   try {
     const { paymentId } = req.params;
 
-    const { data: payment, error } = await supabaseAdmin
+    // Déterminer si c'est un UUID ou un ID Moneroo
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(paymentId);
+    
+    // Récupérer le paiement avec le pricing associé et router_ip
+    let query = supabaseAdmin
       .from('payments')
-      .select('*, tickets(username, password), wifi_zones(name)')
-      .eq('id', paymentId)
-      .single();
+      .select('*, wifi_zones(name, router_ip), pricings(duration_hours, name)');
+
+    // Si c'est un UUID, chercher par id, sinon chercher par moneroo_payment_id
+    if (isUUID) {
+      query = query.eq('id', paymentId);
+    } else {
+      // C'est un ID Moneroo (py_xxx ou test_xxx)
+      query = query.eq('moneroo_payment_id', paymentId);
+    }
+
+    const { data: payment, error } = await query.single();
 
     if (error || !payment) {
+      logger.warn(`Payment not found: ${paymentId} (isUUID: ${isUUID})`);
       return res.status(404).json({
         error: 'Payment not found'
       });
+    }
+
+    // Récupérer les tickets associés à ce paiement
+    const { data: tickets, error: ticketsError } = await supabaseAdmin
+      .from('tickets')
+      .select('username, password')
+      .eq('payment_id', payment.id);
+
+    if (!ticketsError && tickets) {
+      payment.tickets = tickets;
+    } else {
+      payment.tickets = [];
+    }
+
+    // Si le paiement est en attente et qu'on a un ID Moneroo, vérifier le statut avec Moneroo
+    if (payment.status === 'pending' && payment.moneroo_payment_id) {
+      logger.info(`Checking payment status with Moneroo: ${payment.moneroo_payment_id}`);
+      const verifyResult = await verifyPayment(payment.moneroo_payment_id);
+      
+      if (verifyResult.success && verifyResult.payment) {
+        const monerooStatus = verifyResult.payment.status;
+        
+        // Si le paiement est confirmé sur Moneroo mais pas encore dans notre DB, traiter le webhook
+        if (monerooStatus === 'success' && payment.status !== 'completed') {
+          logger.info(`Payment ${payment.moneroo_payment_id} confirmed on Moneroo, processing...`);
+          
+          // Mettre à jour le statut et attribuer le ticket
+          const { error: updateError } = await supabaseAdmin
+            .from('payments')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', payment.id);
+
+          if (!updateError) {
+            // Attribuer un ticket
+            const ticketResult = await assignTicketAtomically(
+              payment.wifi_zone_id,
+              payment.id
+            );
+
+            if (ticketResult.success) {
+              logger.info(`Ticket assigned to payment ${payment.id}`);
+              // Recharger le paiement avec le ticket et le pricing
+              const { data: updatedPayment } = await supabaseAdmin
+                .from('payments')
+                .select('*, wifi_zones(name, router_ip), pricings(duration_hours, name)')
+                .eq('id', payment.id)
+                .single();
+              
+              // Récupérer les tickets associés
+              const { data: tickets } = await supabaseAdmin
+                .from('tickets')
+                .select('username, password')
+                .eq('payment_id', updatedPayment.id);
+              
+              if (tickets) {
+                updatedPayment.tickets = tickets;
+              } else {
+                updatedPayment.tickets = [];
+              }
+              
+              return res.json({
+                payment: updatedPayment
+              });
+            }
+          }
+        }
+      }
     }
 
     res.json({

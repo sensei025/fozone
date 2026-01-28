@@ -2,7 +2,9 @@
  * Configuration principale de l'application Express
  */
 
-require('dotenv').config();
+// Charger les variables d'environnement AVANT tout autre import
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -28,7 +30,14 @@ app.use(cors(corsOptions));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limite de 100 requêtes par IP
-  message: 'Too many requests from this IP, please try again later.'
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Trop de requêtes depuis cette adresse IP. Veuillez réessayer plus tard.',
+      retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+    });
+  }
 });
 app.use('/api/', limiter);
 

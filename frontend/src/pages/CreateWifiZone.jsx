@@ -62,7 +62,7 @@ export default function CreateWifiZone({ onCancel, onSuccess }) {
     <div className="w-full space-y-4 md:space-y-6">
       {/* Titre principal */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-primary-700 dark:text-primary-500">
+        <h1 className="text-2xl md:text-3xl font-bold text-green-700 dark:text-green-500">
           Créez et gérez vos zones WiFi
         </h1>
         
@@ -72,19 +72,19 @@ export default function CreateWifiZone({ onCancel, onSuccess }) {
           <span className="mx-1 md:mx-2">/</span>
           <span>Gestion des Wifi Zone</span>
           <span className="mx-1 md:mx-2">/</span>
-          <span className="text-primary-600 dark:text-primary-400 font-medium">
+          <span className="text-green-600 dark:text-green-400 font-medium">
             Ajouter un Wifi Zone
           </span>
         </nav>
       </div>
 
       {/* Card principale */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 lg:p-8">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-4 md:p-6 lg:p-8">
         {/* En-tête de section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 md:mb-6">
           <div className="flex items-center space-x-2 md:space-x-3">
-            <div className="p-1.5 md:p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-              <Wifi className="text-primary-600 dark:text-primary-400" size={20} />
+            <div className="p-1.5 md:p-2 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm">
+              <Wifi className="text-green-600 dark:text-green-400" size={20} />
             </div>
             <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
               Ajouter un nouveau Wifi Zone
@@ -92,7 +92,7 @@ export default function CreateWifiZone({ onCancel, onSuccess }) {
           </div>
           <Link
             to="/zones"
-            className="btn btn-primary flex items-center justify-center text-sm md:text-base"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 text-sm md:text-base"
           >
             <Menu size={16} className="mr-2" />
             <span className="hidden sm:inline">Voir mes Wifi Zones</span>
@@ -101,10 +101,10 @@ export default function CreateWifiZone({ onCancel, onSuccess }) {
         </div>
 
         {/* Notice importante */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 md:p-4 mb-4 md:mb-6">
+        <div className="bg-gradient-to-r from-green-50 to-green-50/50 dark:from-green-900/20 dark:to-green-800/10 border border-green-200 dark:border-green-800 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
           <div className="flex items-start space-x-2 md:space-x-3">
-            <Info className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={18} />
-            <p className="text-xs md:text-sm text-blue-800 dark:text-blue-300">
+            <Info className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" size={18} />
+            <p className="text-xs md:text-sm text-green-800 dark:text-green-300">
               <strong>Important :</strong> Les informations que vous saisissez ici seront utilisées pour configurer et identifier votre zone WiFi. Assurez-vous de fournir des informations précises pour une meilleure gestion.
             </p>
           </div>
@@ -203,7 +203,7 @@ export default function CreateWifiZone({ onCancel, onSuccess }) {
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-4 pt-4 md:pt-6 border-t border-green-100 dark:border-gray-700">
             <button
               type="button"
               onClick={() => {
@@ -213,14 +213,14 @@ export default function CreateWifiZone({ onCancel, onSuccess }) {
                   navigate('/zones');
                 }
               }}
-              className="btn btn-secondary order-2 sm:order-1"
+              className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all duration-200 order-2 sm:order-1"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-primary order-1 sm:order-2"
+              className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
             >
               {loading ? 'Création...' : 'Créer la zone WiFi'}
             </button>

@@ -3,6 +3,7 @@
  */
 
 import api from '../config/api';
+import { getApiUrl } from '../config/env';
 
 /**
  * Récupère les tarifs d'une zone Wi-Fi
@@ -36,9 +37,7 @@ export async function deletePricing(id) {
  * Récupère les tarifs publics d'une zone Wi-Fi (route publique, pas d'auth)
  */
 export async function getPublicPricingsByZone(zoneId) {
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-  
-  const response = await fetch(`${API_URL}/pricings/public/zone/${zoneId}`, {
+  const response = await fetch(getApiUrl(`pricings/public/zone/${zoneId}`), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

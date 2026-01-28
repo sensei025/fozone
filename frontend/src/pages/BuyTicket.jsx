@@ -11,7 +11,6 @@ export default function BuyTicket() {
   const [zone, setZone] = useState(null);
   const [pricings, setPricings] = useState([]);
   const [selectedPricing, setSelectedPricing] = useState('');
-  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
@@ -63,11 +62,6 @@ export default function BuyTicket() {
       return;
     }
 
-    if (!phone || phone.length < 8) {
-      toast.error('Veuillez entrer un numéro de téléphone valide');
-      return;
-    }
-
     setProcessing(true);
 
     try {
@@ -75,7 +69,6 @@ export default function BuyTicket() {
         wifi_zone_id: zoneId,
         pricing_id: selectedPricing,
         customer: {
-          phone: phone,
           email: `client-${Date.now()}@wifi.local`,
           first_name: 'Client',
           last_name: 'WiFi',
@@ -113,17 +106,17 @@ export default function BuyTicket() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4">
       <div className="max-w-md mx-auto">
         {/* Card principale */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-green-100 dark:border-gray-700 p-6">
           {/* Logo */}
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center mb-4">
-              <Wifi className="text-primary-600 dark:text-primary-400" size={32} />
+              <Wifi className="text-green-600 dark:text-green-400" size={32} />
             </div>
-            <h1 className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-              Ticket WiFi Zone
+            <h1 className="text-2xl font-bold text-green-600 dark:text-green-400">
+              Fo-Zone
             </h1>
           </div>
 
@@ -131,7 +124,7 @@ export default function BuyTicket() {
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Vous êtes connecté sur le Wifi Zone :{' '}
-              <span className="text-primary-600 dark:text-primary-400">{zone.name}</span>
+              <span className="text-green-600 dark:text-green-400">{zone.name}</span>
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Vous êtes sur le point d'acheter un accès internet sur Ticket Wifi Zone. 
@@ -161,28 +154,11 @@ export default function BuyTicket() {
               </select>
             </div>
 
-            {/* Numéro de téléphone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Numéro de téléphone
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="229XXXXXXXXX"
-                className="input"
-                required
-                minLength={8}
-                maxLength={20}
-              />
-            </div>
-
             {/* Bouton Acheter */}
             <button
               type="submit"
-              disabled={processing || !selectedPricing || !phone}
-              className="btn btn-primary w-full flex items-center justify-center"
+              disabled={processing || !selectedPricing}
+              className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {processing ? (
                 <>

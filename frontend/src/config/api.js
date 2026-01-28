@@ -2,7 +2,10 @@
  * Configuration de l'API backend
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import { API_URL } from './env';
+
+// Export pour compatibilité avec le code existant
+export { API_URL };
 
 /**
  * Récupère le token JWT depuis le localStorage
@@ -39,7 +42,22 @@ async function apiRequest(endpoint, options = {}) {
       return { success: true };
     }
 
-    const data = await response.json();
+    // Vérifier le Content-Type avant de parser JSON
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Si ce n'est pas du JSON, essayer de parser quand même ou utiliser le texte
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        // Si ce n'est pas du JSON valide, créer un objet d'erreur
+        throw new Error(text || `Erreur HTTP ${response.status}: ${response.statusText}`);
+      }
+    }
 
     if (!response.ok) {
       // Si erreur d'authentification, nettoyer le localStorage

@@ -139,7 +139,7 @@ export default function Profile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
       </div>
     );
   }
@@ -157,11 +157,11 @@ export default function Profile() {
       </div>
 
       {/* Carte de profil utilisateur */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 md:p-8 hover-lift hover-glow">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-6 md:p-8 hover-lift hover-glow">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           {/* Avatar */}
           <div className="relative">
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-2xl md:text-3xl font-bold shadow-lg">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-2xl md:text-3xl font-bold shadow-lg">
               {getInitials(user?.full_name || user?.email || 'U')}
             </div>
             <div className="absolute bottom-0 right-0 w-6 h-6 md:w-8 md:h-8 bg-green-500 rounded-full border-4 border-white dark:border-gray-800"></div>
@@ -176,7 +176,7 @@ export default function Profile() {
               Profil utilisateur
             </p>
             {user?.role && (
-              <span className="inline-block px-3 py-1 text-xs md:text-sm font-semibold text-primary-700 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/20 rounded-full">
+              <span className="inline-block px-3 py-1 text-xs md:text-sm font-semibold text-green-700 dark:text-green-400 bg-gradient-to-r from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-full">
                 {user.role === 'admin' ? 'Administrateur' : user.role}
               </span>
             )}
@@ -185,7 +185,7 @@ export default function Profile() {
       </div>
 
       {/* Onglets */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover-glow">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 hover-glow">
         <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="flex overflow-x-auto -mb-px">
             {tabs.map((tab) => {
@@ -196,7 +196,7 @@ export default function Profile() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 md:px-6 py-4 text-sm md:text-base font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                      ? 'border-green-600 text-green-600 dark:text-green-400'
                       : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
@@ -323,7 +323,7 @@ export default function Profile() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="btn btn-primary inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                 >
                   {saving ? (
                     <>
@@ -442,7 +442,7 @@ export default function Profile() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="btn btn-primary inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                 >
                   {saving ? (
                     <>

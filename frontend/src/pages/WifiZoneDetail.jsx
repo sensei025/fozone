@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getWifiZoneById, updateWifiZone, deleteWifiZone } from '../services/wifiZones';
 import toast from 'react-hot-toast';
+import { getFrontendUrl } from '../config/env';
 import { 
   ArrowLeft, 
   Copy, 
@@ -100,13 +101,12 @@ export default function WifiZoneDetail() {
   };
 
   const getBuyLink = () => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/buy/${id}`;
+    return getFrontendUrl(`buy/${id}`);
   };
 
   const getIntegrationCode = () => {
     const buyLink = getBuyLink();
-    const recoveryLink = `${window.location.origin}/payment/return`;
+    const recoveryLink = getFrontendUrl('payment/return');
     
     return `<style>
 .wifi-button {
@@ -123,10 +123,10 @@ export default function WifiZoneDetail() {
 }
 
 .wifi-button-primary {
-    background: linear-gradient(45deg, #e31837, #ff2d55);
+    background: linear-gradient(45deg, #10b981, #34d399);
     color: white;
     border: none;
-    box-shadow: 0 4px 15px rgba(227, 24, 55, 0.2);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
 }
 
 .wifi-button-secondary {
@@ -176,7 +176,7 @@ export default function WifiZoneDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
       </div>
     );
   }
@@ -185,7 +185,7 @@ export default function WifiZoneDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-gray-600 dark:text-gray-400">Zone non trouvée</p>
-        <Link to="/zones" className="btn btn-primary mt-4 inline-block">
+        <Link to="/zones" className="inline-block mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
           Retour aux zones
         </Link>
       </div>
@@ -196,7 +196,7 @@ export default function WifiZoneDetail() {
     <div className="space-y-6 md:space-y-8 w-full">
       {/* En-tête */}
       <div className="flex items-center justify-between">
-        <Link to="/zones" className="flex items-center text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-500 transition-colors">
+        <Link to="/zones" className="flex items-center text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-500 transition-colors">
           <ArrowLeft size={20} className="mr-2" />
           Retour aux zones
         </Link>
@@ -343,7 +343,7 @@ export default function WifiZoneDetail() {
               </div>
             </div>
             <div className="flex gap-4 pt-4">
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
                 Enregistrer les modifications
               </button>
               <button
@@ -471,7 +471,7 @@ export default function WifiZoneDetail() {
                         />
                         <button
                           onClick={() => copyToClipboard(getIntegrationCode(), 'integrationCode')}
-                          className="absolute top-2 right-2 btn btn-primary inline-flex items-center gap-2 px-3 py-1.5 text-sm"
+                          className="absolute top-2 right-2 inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
                           title="Copier le code"
                         >
                           {copied.integrationCode ? (

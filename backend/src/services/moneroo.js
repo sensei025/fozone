@@ -8,9 +8,23 @@ const axios = require('axios');
 const crypto = require('crypto');
 const logger = require('../config/logger');
 
-const MONEROO_BASE_URL = process.env.MONEROO_BASE_URL || 'https://api.moneroo.io';
+// URL de base de l'API Moneroo : https://api.moneroo.io/v1
+// Si MONEROO_BASE_URL est fourni sans /v1, on l'ajoute automatiquement
+const baseUrl = process.env.MONEROO_BASE_URL || 'https://api.moneroo.io';
+const MONEROO_BASE_URL = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
 const MONEROO_API_KEY = process.env.MONEROO_API_KEY;
 const MONEROO_WEBHOOK_SECRET = process.env.MONEROO_WEBHOOK_SECRET;
+
+// Logger la configuration au démarrage (sans exposer la clé complète)
+if (MONEROO_API_KEY) {
+  logger.info('Moneroo API Key configured', {
+    keyLength: MONEROO_API_KEY.length,
+    keyPrefix: MONEROO_API_KEY.substring(0, 8) + '...',
+    baseUrl: MONEROO_BASE_URL
+  });
+} else {
+  logger.warn('⚠️  MONEROO_API_KEY is not configured! Payments will fail.');
+}
 
 /**
  * Crée une intention de paiement via Moneroo Standard Integration
@@ -30,6 +44,15 @@ const MONEROO_WEBHOOK_SECRET = process.env.MONEROO_WEBHOOK_SECRET;
  */
 async function createPayment(paymentData) {
   try {
+    // Vérifier que l'API Key est configurée
+    if (!MONEROO_API_KEY) {
+      logger.error('MONEROO_API_KEY is not configured');
+      return {
+        success: false,
+        error: 'Moneroo API key is not configured. Please set MONEROO_API_KEY in your .env file.'
+      };
+    }
+
     const {
       amount,
       currency = 'XOF',
@@ -54,9 +77,14 @@ async function createPayment(paymentData) {
       metadata: metadata
     };
 
-    // Ajouter le téléphone si fourni
+    // Ajouter le téléphone dans customer (pré-remplit le champ sur Moneroo)
     if (customer.phone) {
       payload.customer.phone = customer.phone;
+      
+      // Optionnel : Utiliser restricted_phone pour forcer l'utilisation de ce numéro
+      // Format: { number: "22951345780", country_code: "BJ" }
+      // Note: Si on utilise restricted_phone, on ne peut pas utiliser restrict_country_code
+      // Pour l'instant, on laisse juste le phone dans customer pour pré-remplir
     }
 
     // Ajouter les méthodes de paiement si spécifiées
@@ -65,7 +93,7 @@ async function createPayment(paymentData) {
     }
 
     const response = await axios.post(
-      `${MONEROO_BASE_URL}/v1/payments/initialize`,
+      `${MONEROO_BASE_URL}/payments/initialize`,
       payload,
       {
         headers: {
@@ -98,13 +126,24 @@ async function createPayment(paymentData) {
     logger.error('Error creating Moneroo payment:', {
       message: error.message,
       response: error.response?.data,
-      status: error.response?.status
+      status: error.response?.status,
+      apiKeyConfigured: !!MONEROO_API_KEY,
+      apiKeyLength: MONEROO_API_KEY ? MONEROO_API_KEY.length : 0
     });
     
     // Gérer les erreurs selon le format Moneroo
-    const errorMessage = error.response?.data?.message || 
-                        error.response?.data?.errors?.[0]?.message || 
-                        error.message;
+    let errorMessage = error.response?.data?.message || 
+                      error.response?.data?.errors?.[0]?.message || 
+                      error.message;
+
+    // Message plus explicite pour les erreurs 401 (Invalid API Key)
+    if (error.response?.status === 401) {
+      if (!MONEROO_API_KEY) {
+        errorMessage = 'Moneroo API key is not configured. Please set MONEROO_API_KEY in your .env file.';
+      } else {
+        errorMessage = 'Invalid Moneroo API key. Please verify that MONEROO_API_KEY in your .env file is correct and matches your Moneroo dashboard.';
+      }
+    }
 
     return {
       success: false,
@@ -121,8 +160,17 @@ async function createPayment(paymentData) {
  */
 async function verifyPayment(paymentId) {
   try {
+    // Vérifier que l'API Key est configurée
+    if (!MONEROO_API_KEY) {
+      logger.error('MONEROO_API_KEY is not configured');
+      return {
+        success: false,
+        error: 'Moneroo API key is not configured'
+      };
+    }
+
     const response = await axios.get(
-      `${MONEROO_BASE_URL}/v1/payments/${paymentId}/verify`,
+      `${MONEROO_BASE_URL}/payments/${paymentId}/verify`,
       {
         headers: {
           'Authorization': `Bearer ${MONEROO_API_KEY}`,
@@ -152,9 +200,18 @@ async function verifyPayment(paymentId) {
       status: error.response?.status
     });
 
-    const errorMessage = error.response?.data?.message || 
-                        error.response?.data?.errors?.[0]?.message || 
-                        error.message;
+    let errorMessage = error.response?.data?.message || 
+                      error.response?.data?.errors?.[0]?.message || 
+                      error.message;
+
+    // Message plus explicite pour les erreurs 401 (Invalid API Key)
+    if (error.response?.status === 401) {
+      if (!MONEROO_API_KEY) {
+        errorMessage = 'Moneroo API key is not configured';
+      } else {
+        errorMessage = 'Invalid Moneroo API key. Please verify your MONEROO_API_KEY.';
+      }
+    }
 
     return {
       success: false,

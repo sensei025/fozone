@@ -39,7 +39,7 @@ export default function WifiZones() {
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
     </div>;
   }
 
@@ -56,7 +56,7 @@ export default function WifiZones() {
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="btn btn-primary flex items-center justify-center gap-2 h-11 px-6 font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all duration-200"
+          className="inline-flex items-center justify-center gap-2 h-11 px-6 font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-200 hover:scale-105"
         >
           <Plus size={20} strokeWidth={2.5} />
           Nouvelle zone
@@ -75,15 +75,15 @@ export default function WifiZones() {
       {!showCreateForm && (
         <>
           {zones.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 text-center py-12 md:py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full mb-6">
-                <MapPin className="text-gray-400" size={40} strokeWidth={2} />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 text-center py-12 md:py-16">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-2xl mb-6">
+                <MapPin className="text-green-600 dark:text-green-400" size={40} strokeWidth={2} />
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Aucune zone Wi-Fi</p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Commencez par créer votre première zone</p>
               <button 
                 onClick={() => setShowCreateForm(true)} 
-                className="btn btn-primary inline-flex items-center gap-2"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
                 <Plus size={18} strokeWidth={2.5} />
                 Créer votre première zone
@@ -92,11 +92,11 @@ export default function WifiZones() {
           ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {zones.map((zone) => (
-            <div key={zone.id} className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-200">
+            <div key={zone.id} className="group bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-6 hover:shadow-xl hover:border-green-300 dark:hover:border-green-700 hover:scale-[1.02] transition-all duration-200">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="p-2.5 bg-primary-100 dark:bg-primary-900/20 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-900/30 transition-colors flex-shrink-0">
-                    <Wifi className="text-primary-600 dark:text-primary-400" size={20} strokeWidth={2.5} />
+                  <div className="p-2.5 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-xl group-hover:from-green-200 group-hover:to-green-100 dark:group-hover:from-green-900/40 dark:group-hover:to-green-800/30 transition-all shadow-sm flex-shrink-0">
+                    <Wifi className="text-green-600 dark:text-green-400" size={20} strokeWidth={2.5} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 truncate">
@@ -110,7 +110,7 @@ export default function WifiZones() {
                 <div className="flex space-x-1.5 ml-2">
                   <Link
                     to={`/zones/${zone.id}`}
-                    className="p-2 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
+                    className="p-2 text-gray-500 hover:text-green-600 dark:hover:text-green-400 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
                     title="Modifier"
                   >
                     <Edit size={18} strokeWidth={2} />
@@ -137,7 +137,7 @@ export default function WifiZones() {
               </div>
               <Link
                 to={`/zones/${zone.id}`}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors group/link"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors group/link"
               >
                 Voir les détails
                 <span className="group-hover/link:translate-x-1 transition-transform">→</span>

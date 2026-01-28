@@ -3,6 +3,7 @@
  */
 
 import api from '../config/api';
+import { getApiUrl } from '../config/env';
 
 /**
  * Récupère les tickets d'une zone Wi-Fi
@@ -28,7 +29,7 @@ export async function importTickets(zoneId, csvFile, pricingId = null) {
   const token = localStorage.getItem('auth_token');
   
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tickets/zone/${zoneId}/import`,
+    getApiUrl(`tickets/zone/${zoneId}/import`),
     {
       method: 'POST',
       headers: {

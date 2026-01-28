@@ -15,7 +15,7 @@ const paymentIntentValidation = [
   body('amount').optional().isFloat({ min: 0 }),
   body('pricing_id').optional().isUUID(),
   body('customer').isObject(),
-  body('customer.phone').trim().isLength({ min: 8, max: 20 }),
+  body('customer.phone').optional({ nullable: true, checkFalsy: true }).trim().isLength({ min: 8, max: 20 }),
   body('customer.email').optional().isEmail(),
   body('customer.first_name').optional().trim(),
   body('customer.last_name').optional().trim(),
@@ -29,7 +29,15 @@ const paymentIntentValidation = [
 ];
 
 const paymentIdValidation = [
-  param('paymentId').isUUID()
+  // Accepter soit un UUID (pour les routes admin), soit un ID Moneroo (py_xxx ou test_xxx)
+  param('paymentId').custom((value) => {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+    const isMonerooId = /^(py_|test_)[a-z0-9]+$/i.test(value);
+    if (!isUUID && !isMonerooId) {
+      throw new Error('Invalid payment ID format');
+    }
+    return true;
+  })
 ];
 
 const zoneIdValidation = [

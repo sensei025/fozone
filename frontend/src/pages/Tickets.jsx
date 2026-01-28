@@ -242,7 +242,7 @@ export default function Tickets() {
   if (loadingZones) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
       </div>
     );
   }
@@ -251,7 +251,7 @@ export default function Tickets() {
     <div className="space-y-6 md:space-y-8 w-full">
       {/* En-tête */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-primary-700 dark:text-primary-500 tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold text-green-700 dark:text-green-500 tracking-tight">
           Ajoutez de nouveaux tickets Wifi Zone
         </h1>
         <nav className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -259,7 +259,7 @@ export default function Tickets() {
           <span className="mx-2">/</span>
           <span>Gestion des accès WiFi</span>
           <span className="mx-2">/</span>
-          <span className="text-primary-600 dark:text-primary-400 font-medium">
+          <span className="text-green-600 dark:text-green-400 font-medium">
             {showList ? 'Consulter liste ticket' : 'Ajouter un ticket'}
           </span>
         </nav>
@@ -268,7 +268,7 @@ export default function Tickets() {
       {/* Section Statistiques */}
       {showList && selectedZone && stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-5 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
@@ -284,7 +284,7 @@ export default function Tickets() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-5 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
@@ -300,7 +300,7 @@ export default function Tickets() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-5 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
@@ -316,7 +316,7 @@ export default function Tickets() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 md:p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-5 md:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
@@ -336,12 +336,12 @@ export default function Tickets() {
 
       {/* Formulaire d'import ou Liste des tickets */}
       {!showList ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6 lg:p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-green-100 dark:border-gray-700 p-4 md:p-6 lg:p-8">
           {/* En-tête de section */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
             <div className="flex items-center space-x-3 mb-4 sm:mb-0">
-              <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-                <Tag className="text-primary-600 dark:text-primary-400" size={24} strokeWidth={2.5} />
+              <div className="p-2 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-xl shadow-sm">
+                <Tag className="text-green-600 dark:text-green-400" size={24} strokeWidth={2.5} />
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
                 Ajouter un ticket
@@ -354,7 +354,7 @@ export default function Tickets() {
                   setListZoneId(wifiZones[0].id);
                 }
               }}
-              className="btn btn-secondary flex items-center"
+              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all duration-200 flex items-center"
             >
               <Menu size={18} strokeWidth={2} className="mr-2 hidden sm:inline-block" />
               <span className="sm:hidden">Liste</span>
@@ -363,10 +363,10 @@ export default function Tickets() {
           </div>
 
           {/* Notice importante */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <div className="bg-gradient-to-r from-green-50 to-green-50/50 dark:from-green-900/20 dark:to-green-800/10 border border-green-200 dark:border-green-800 rounded-xl p-4 mb-6">
             <div className="flex items-start space-x-3">
-              <Info className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={20} strokeWidth={2} />
-              <p className="text-sm text-blue-800 dark:text-blue-300">
+              <Info className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" size={20} strokeWidth={2} />
+              <p className="text-sm text-green-800 dark:text-green-300">
                 <strong>Conseil :</strong> Pour faciliter la création de nouveaux tickets, vous devez importer les fichiers au format CSV, générés depuis votre routeur MikroTik.
               </p>
             </div>
@@ -632,7 +632,7 @@ export default function Tickets() {
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Importez des tickets pour commencer</p>
               <button
                 onClick={() => setShowList(false)}
-                className="btn btn-primary inline-flex items-center gap-2"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
                 <Upload size={18} strokeWidth={2.5} />
                 Importer des tickets

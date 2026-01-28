@@ -3,6 +3,7 @@
  */
 
 import api from '../config/api';
+import { getApiUrl } from '../config/env';
 
 /**
  * Récupère les statistiques de paiements (pour graphique chiffre d'affaires)
@@ -34,10 +35,9 @@ export async function getPaymentHistory(params = {}) {
 export async function exportPaymentHistoryCSV(params = {}) {
   const queryParams = new URLSearchParams(params).toString();
   const token = localStorage.getItem('auth_token');
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   
   const response = await fetch(
-    `${API_URL}/accounting/export-csv${queryParams ? `?${queryParams}` : ''}`,
+    `${getApiUrl('accounting/export-csv')}${queryParams ? `?${queryParams}` : ''}`,
     {
       method: 'GET',
       headers: {

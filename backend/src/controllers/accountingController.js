@@ -208,14 +208,13 @@ async function getPaymentHistory(req, res, next) {
       });
     }
 
-    // Construire la requête
+    // Construire la requête (sans tickets car la relation va dans l'autre sens)
     let query = supabaseAdmin
       .from('payments')
       .select(`
         *,
-        wifi_zones!inner(id, name),
-        pricings(amount, name),
-        tickets(id, username, password)
+        wifi_zones(id, name),
+        pricings(amount, name)
       `)
       .in('wifi_zone_id', zoneIds)
       .eq('status', 'completed');
@@ -237,7 +236,7 @@ async function getPaymentHistory(req, res, next) {
       query = query.or(`moneroo_payment_id.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
-    // Compter d'abord le total avec les mêmes filtres
+    // Compter d'abord le total avec les mêmes filtres (sans relations pour éviter les erreurs)
     let countQuery = supabaseAdmin
       .from('payments')
       .select('id', { count: 'exact', head: true })
@@ -258,7 +257,12 @@ async function getPaymentHistory(req, res, next) {
       countQuery = countQuery.or(`moneroo_payment_id.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
-    const { count } = await countQuery;
+    const { count, error: countError } = await countQuery;
+    
+    if (countError) {
+      logger.error('Error counting payments:', countError);
+      throw countError;
+    }
 
     // Pagination
     const from = (page - 1) * limit;
@@ -271,6 +275,33 @@ async function getPaymentHistory(req, res, next) {
     if (error) {
       logger.error('Error fetching payment history:', error);
       throw error;
+    }
+
+    // Récupérer les tickets associés séparément (la relation va de tickets vers payments)
+    const paymentIds = payments?.map(p => p.id) || [];
+    let ticketsMap = {};
+    
+    if (paymentIds.length > 0) {
+      const { data: tickets, error: ticketsError } = await supabaseAdmin
+        .from('tickets')
+        .select('id, username, password, payment_id')
+        .in('payment_id', paymentIds);
+      
+      if (!ticketsError && tickets) {
+        // Créer un map pour accéder rapidement aux tickets par payment_id
+        tickets.forEach(ticket => {
+          if (ticket.payment_id) {
+            if (!ticketsMap[ticket.payment_id]) {
+              ticketsMap[ticket.payment_id] = [];
+            }
+            ticketsMap[ticket.payment_id].push({
+              id: ticket.id,
+              username: ticket.username,
+              password: ticket.password
+            });
+          }
+        });
+      }
     }
 
     // Calculer les commissions et revenus
@@ -288,7 +319,7 @@ async function getPaymentHistory(req, res, next) {
         pricing_name: payment.pricings?.name || null,
         zone_name: payment.wifi_zones?.name || 'N/A',
         network: 'MTN MoMo Benin', // À récupérer depuis Moneroo si disponible
-        ticket: payment.tickets?.[0] || null
+        ticket: ticketsMap[payment.id]?.[0] || null
       };
     }) || [];
 
@@ -339,14 +370,13 @@ async function exportPaymentHistoryCSV(req, res, next) {
       return res.status(400).json({ error: 'No zones found' });
     }
 
-    // Construire la requête
+    // Construire la requête (sans tickets car la relation va dans l'autre sens)
     let query = supabaseAdmin
       .from('payments')
       .select(`
         *,
-        wifi_zones!inner(id, name),
-        pricings(amount, name),
-        tickets(id, username, password)
+        wifi_zones(id, name),
+        pricings(amount, name)
       `)
       .in('wifi_zone_id', zoneIds)
       .eq('status', 'completed');
@@ -366,6 +396,32 @@ async function exportPaymentHistoryCSV(req, res, next) {
     if (error) {
       logger.error('Error fetching payments for CSV export:', error);
       throw error;
+    }
+
+    // Récupérer les tickets associés séparément pour l'export CSV
+    const paymentIds = payments?.map(p => p.id) || [];
+    let ticketsMap = {};
+    
+    if (paymentIds.length > 0) {
+      const { data: tickets, error: ticketsError } = await supabaseAdmin
+        .from('tickets')
+        .select('id, username, password, payment_id')
+        .in('payment_id', paymentIds);
+      
+      if (!ticketsError && tickets) {
+        tickets.forEach(ticket => {
+          if (ticket.payment_id) {
+            if (!ticketsMap[ticket.payment_id]) {
+              ticketsMap[ticket.payment_id] = [];
+            }
+            ticketsMap[ticket.payment_id].push({
+              id: ticket.id,
+              username: ticket.username,
+              password: ticket.password
+            });
+          }
+        });
+      }
     }
 
     // Générer le CSV
