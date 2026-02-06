@@ -41,7 +41,7 @@ export default function Register() {
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
             Créer un compte
           </h1>
-          <p className="text-base text-gray-600 dark:text-gray-400 font-medium flex items-center gap-2">
+          <p className="text-base text-gray-600 dark:text-gray-400 font-medium flex items-center justify-center gap-2">
             Rejoignez <Logo size="lg" className="inline-block text-gray-900 dark:text-white" />
           </p>
         </div>
